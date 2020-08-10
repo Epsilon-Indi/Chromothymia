@@ -3,7 +3,7 @@
 modn = minetest.get_current_modname()
 local path = minetest.get_modpath(modn)
 gav = {
-    u = {},
+    u = { colors = {"#f2f2f2","#ff6f5e","#228b22","#2c3d63","#ac67ef","#0e7fa7","#fdd66d","#8b8378","#addcca","#ff721a","#662f6d","#905f3b","#b62828"}},
     m = {},
     f = {},
     players = {names = {}, teams = {}},
@@ -18,6 +18,7 @@ dofile(path.."/node.lua")
 dofile(path.."/flow.lua")
 dofile(path.."/util.lua")
 dofile(path.."/visuals.lua")
+dofile(path.."/gboard.lua")
 
 minetest.register_on_generated(function(minp, maxp) -- Generates initial area on new world construction.
 
@@ -50,3 +51,15 @@ minetest.register_on_leaveplayer(function(player, timed_out) -- Remove playernam
     else end
 end
 end)
+
+
+minetest.register_chatcommand("boardt", {
+    params = "<name> <privilege>", 
+    description = "Remove privilege from player", 
+    privs = {privs=true},
+    func = function(name, param)
+        local player = gav.u.pl(name)
+        local pos = player:get_pos()
+        gav.f.board_construct(pos, 80)
+    end
+})

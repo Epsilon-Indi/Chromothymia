@@ -1,6 +1,7 @@
-gav.u.teambubble = function(pos)
+gav.u.teambubble = function(pos, color)
+    local color = color or ""
     minetest.add_particlespawner({
-        amount = 12,
+        amount = 20,
         time = 0,
         minpos = {x=pos.x-0.1, y=pos.y + 0.6, z=pos.z-0.1},
         maxpos = {x=pos.x+0.1, y=pos.y + 0.6, z=pos.z+0.1},
@@ -16,7 +17,7 @@ gav.u.teambubble = function(pos)
         collisiondetection = false,
         collision_removal = false,
         vertical = true,
-        texture = "teambubble.png",
+        texture = "teambubble.png".."^[brighten".."^[multiply:"..color,
         animation = {
             type = "vertical_frames",
             aspect_w = 16,
