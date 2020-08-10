@@ -27,8 +27,8 @@ local va = VoxelArea:new{MinEdge=minp, MaxEdge=maxp}
 local is_origin = va:contains(0,0,0)
 
 if(is_origin)then
-vm:set_node_at({x=0,y=0,z=0}, {name = "gav:tile"})
-minetest.after(5, function() minetest.punch_node({x=0,y=0,z=0})end)
+vm:set_node_at({x=0,y=0,z=0}, {name = modn..":ltbg"})
+minetest.after(1, function() minetest.punch_node({x=0,y=0,z=0})end)
 else end
 vm:write_to_map()
 
@@ -60,6 +60,6 @@ minetest.register_chatcommand("boardt", {
     func = function(name, param)
         local player = gav.u.pl(name)
         local pos = player:get_pos()
-        gav.f.board_construct(pos, 80)
+        gav.f.board_construct(pos, 64)
     end
 })

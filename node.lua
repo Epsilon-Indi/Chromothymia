@@ -1,3 +1,13 @@
+minetest.register_node(modn..":ltbg",{
+    drawtype = "airlike",
+    groups = {crumbly = 1},
+    on_punch = function(pos)
+        local pos2 = {x = pos.x - 6, y = pos.y - 20, z = pos.z - 4}
+        minetest.place_schematic(pos2, gav.u.gav_start,270)
+        minetest.remove_node(pos)
+    end
+})
+
 for n = 1, #gav.u.colors do
 minetest.register_node(modn..":tile"..n,{
     description = "Tile",
@@ -47,6 +57,7 @@ minetest.register_node(modn..":brush",{
 minetest.register_node(modn..":easel_blank",{
     description = "Tile",
     paramtype = "light",
+    paramtype2 = "facedir",
     drawtype = "mesh",
     mesh = "easel.obj",
     tiles = {"bricks1.png"},
@@ -58,9 +69,10 @@ minetest.register_node(modn..":easel_blank",{
 minetest.register_node(modn..":easel_full",{
     description = "Tile",
     paramtype = "light",
+    paramtype2 = "facedir",
     drawtype = "mesh",
     mesh = "easel_full.obj",
-    tiles = {"bricks1.png"},
+    tiles = {"easeltest.png"},
     groups = {crumbly = 1},
     on_punch = function(pos)
         gav.u.easel_rolo(pos)
@@ -73,5 +85,26 @@ minetest.register_node(modn..":easel_full",{
         gav.u.sh(minetest.get_meta(pos):get_int(gav.u.rolo_SETTINGNAMES[set]))
         
 
+    end
+})
+
+minetest.register_craftitem(modn..":filbert", {
+    description = "Brush of the Cloister",
+    groups = {},
+    inventory_image = "default_tool_steelaxe.png",
+    inventory_overlay = "overlay.png",
+    wield_image = "",
+    wield_overlay = "",
+    wield_scale = {x = 1, y = 1, z = 1},
+    stack_max = 99,
+    range = 4.0,
+    on_place = function(itemstack, placer, pointed_thing)
+    end,
+    on_secondary_use = function(itemstack, user, pointed_thing)
+    end,
+    on_drop = function(itemstack, dropper, pos)
+    end,
+    on_use = function(itemstack, user, pointed_thing)
+        gav.u.brushbuild(pointed_thing)
     end
 })
