@@ -5,45 +5,174 @@ gav.u.sh = function(v)
 return type(v) == "string" and minetest.chat_send_all(v) or minetest.chat_send_all(minetest.serialize(v))
 end
 
+gav.u.s = function(v)
+return minetest.serialize(v)
+end
+
 gav.u.pl = function(v)
-return type(v) == "string" and minetest.get_player_by_name(v) or type(v) == "userdata" and v
+return type(v) == "string" and minetest.get_player_by_name(v) or v
+end
+
+gav.u.pln = function(v)
+return type(v) == "userdata" and v:get_player_name() or type(v) == "string" and v
 end
 --------------------------
 
 
 -- Utilfunction constants
 
-gav.u.rolo_MAX = 6
+gav.u.rolo_MAX = 5
 
-gav.u.rolo_SETTINGNAMES = {"setting_SIZE","has_GUARDRAIL","spawn_DIST","item_DIST","ishihara"}
+gav.u.rolo_SETTINGNAMES = {"setting_SIZE","has_GUARDRAIL","spawn_DIST","item_DIST","turn_TIME","ishihara"}
 
-gav.u.rolo_CYCLE = {{8, 16, 32, 64, 80}, {false, true}, {"uniform","randomform","coliform"}, {"default","looty","guerilla","guiacol"},{false, true}} -- Size
+gav.u.rolo_SETTINGS = {{8, 16, 32, 64, 80}, {"Present", "Absent"}, {"uniform","randomform","coliform"}, {"default","looty","guerilla","guiacol"},{},{false, true}} -- Size
+for n = 1, 30 do
+    table.insert(gav.u.rolo_SETTINGS[5],n)
+end
+gav.u.flow_QUEUE = {teams = {}, board = { locked = { poses = {}, incrs = {}}}}
+
 --------------------------
 
 
 -- Game flow functions
+gav.u.commence = function(order)
+    gav.flow.GAME_IO = true
+    gav.u.team_shore(order)
+    local function pregame_HUD_clear()
+        for k,v in pairs(gav.players.huds)do
+            for n = 1, #v do
+            gav.u.pl(k):hud_remove(v[n])
+            end
+        end
+    end
 
-gav.u.cycle = function()
+    pregame_HUD_clear()
+    gav.u.sh(gav.players.huds)
 end
 
+gav.f.board_wane = function()
+    local field = minetest.find_nodes_in_area(gav.m.corners[1],gav.m.corners[2],"group:gav_color_tick")
+    for n = 1, #field do
+        gav.f.lock_wane(field[n])
+    end
+end
+
+
+
+gav.u.cycle_shift = function()
+        if(gav.flow.cycle.prev)then
+        gav.u.mob_set_team(gav.flow.cycle.prev, false)
+        else
+        gav.flow.cycle.prev = gav.flow.cycle.nex
+        end 
+        gav.u.mob_set_team(gav.flow.cycle.nex, true)
+
+        gav.u.sh("turn shifted")
+
+        gav.flow.cycle.nex = gav.flow.cycle.nex + 1 <= #gav.players.teams2 and gav.players.teams2[gav.flow.cycle.nex + 1] and gav.flow.cycle.nex + 1 or 1
+        gav.u.sh(gav.players.teams2)
+    return true
+end
+
+gav.u.cycle_progress = function(color)
+    local color = color and #gav.players.teams2[color] or gav.SETTINGS[5]
+    gav.flow.cycle.counter = gav.flow.cycle.counter + 1
+    gav.u.sh("added 1".." now current counter value is "..gav.flow.cycle.counter)
+    local function counterclear()
+        gav.flow.cycle.counter = 0
+        return true
+    end
+
+    return gav.flow.cycle.counter >= color and counterclear() and gav.u.cycle_shift() and gav.f.board_wane() or true
+end
+
+gav.u.flow_cycle = function()
+    gav.u.flow_QUEUE[1]()
+end
+
+gav.u.flow_QUEUE_add = function(elemdef)
+
+end
 --------------------------
 
 -- Team functions
 
+
 gav.u.team_set = function(name, team) -- Set team of player
-    gav.players.teams[name] = team 
+    gav.players.teams[name] = team  -- team is an int from 1 to 12 denoting color of team
+    return table.insert(gav.players.teams2[team],name) and true
 end
 
 gav.u.team_clear = function(name) -- Clear team of player
+    local team = gav.players.teams[name]
     gav.players.teams[name] = nil
+    for n = 1, #gav.players.teams2[team] do
+        if(gav.players.teams2[team][n] == name)then
+            table.remove( gav.players.teams2[team],n)
+        else end
+    end
+end
+gav.u.team_rolo = function(name)
+    
+    if(gav.flow.GAME_IO)then return else
+        local function rolo_insert(name)
+        local ind = gav.players.teams[name]
+        ind = ind and ind <= #gav.u.colors and ind + 1 or 2
+        gav.players.teams[name] = ind
+        return gav.players.teams2[ind] and gav.u.team_set(name,ind)
+        end
+        rolo_insert(name)
+    end
+end
+gav.u.team_shore = function(order) -- Meant for consolidation of teams
+    local first = math.random(1, #gav.players.teams2)
+    local function cull()
+        for n = 1, #gav.players.teams2 do
+            if(#gav.players.teams2[n] > 0)then
+            else gav.players.teams2[n] = nil 
+            end
+        end
+    end
+
+    local function shuffle(order)
+        if(order)then
+            if(order == "random")then
+                local v = {}
+                local count = #gav.players.teams2
+                for k,_ in pairs(gav.players.teams2)do
+                    table.insert(v,k)
+                end
+
+                for n = 1, #gav.players.teams2 - 1 do
+                    local num = math.random(1,count)
+                    local v, v2 = gav.players.teams2[num],gav.players.teams2[n]
+                    gav.players.teams2[n] = v
+                    gav.players.teams2[num] = v2
+                end
+            elseif(order == "reverse")then
+            else end
+        else end
+        end
+    cull()
+    shuffle("random")
 end
 
-gav.u.mob_set = function(color, tf) -- Alter mobility state of an entire team, by color.
-    local phys = tf and {speed = 1, jump = 1, gravity = 1, sneak = true, sneak_glitch = false} or {speed = 0, jump = 0, gravity = 666, sneak = false, sneak_glitch = false}
+gav.u.mod_set = function()
+end
 
-    for n = 1, #gav.teams.color do
-        gav.u.pl(gav.teams.color[n]):set_physics_override(phys)
+gav.u.mob_set_team = function(color, tf) -- Alter mobility state of an entire team, by color.
+    local phys = tf and {speed = 1, jump = 1, gravity = 1, sneak = true, sneak_glitch = false} or {speed = 0, jump = 0, gravity = 1, sneak = false, sneak_glitch = false}
+    if(gav.players.teams2[color])then
+    for n = 1, #gav.players.teams2[color] do
+        local player = gav.u.pl(gav.players.teams2[color][n])
+        --player:set_velocity({x = 0, y = 0, z = 0})
+        --player:set_acceleration({x = 0, y = 0, z = 0})
+        --minetest.set_node(player:get_pos(),{name = modn..":atile"})
+        --player:set_physics_override(phys)
+        
+        gav.u.sh(player:get_player_velocity())
     end
+else end
 end
 
 gav.u.gear_set = function(color, tf) -- Alter gear of an entire team, by color.
@@ -58,7 +187,7 @@ gav.u.easel_rolo = function(pos) -- Rolls up easel selection
     local data = {
         cur = meta:get_int("easel_rolo"),
     }
-    local nex = data and data.cur and data.cur + 1 <= gav.u.rolo_MAX and data.cur + 1 or 1
+    local nex = data.cur and data.cur + 1 <= #gav.u.rolo_SETTINGNAMES and data.cur + 1 or 1
     meta:set_int("easel_rolo", nex)
 end
 
@@ -70,37 +199,100 @@ gav.u.easelcc = function(pos) -- Returns easel roll value value
 return gav.u.easelc(pos) and minetest.get_meta(pos):get_int(gav.u.rolo_SETTINGNAMES[gav.u.easelcc(pos)])
 end
 
-gav.u.easel_setting = function(pos)
-    local ind = gav.u.easelc(pos)
+gav.u.easel_setting = function(pos) -- Uses current rolo position to set choice from within rolo
+    local ind = gav.u.easelc(pos) 
     local meta = minetest.get_meta(pos)
     local data = {
         cur = meta:get_int(gav.u.rolo_SETTINGNAMES[ind])
     }
-    local nex = data.cur and data.cur + 1 <= #gav.u.rolo_CYCLE[ind] and data.cur + 1 or 1
+    local nex = data.cur + 1 <= #gav.u.rolo_SETTINGS[ind] and data.cur + 1 or 1
     meta:set_int(gav.u.rolo_SETTINGNAMES[ind], nex)
+    gav.SETTINGS[ind] = nex
 end
 
 --------------------------
 
 -- Item Logic
 
-gav.u.brushbuild = function(pointed_thing)
+gav.u.brushbuild = function(pointed_thing, tf)
     local pos = pointed_thing.under
     local bsize = 32
         local node = minetest.get_node(pos)
         local fpos = {x = pos.x - (bsize/2), y = pos.y - bsize/4, z = pos.z + bsize/2}
-        if(node.name == modn..":easel_full")then
+        if(node.name == modn..":easel_full" and tf)then
             gav.f.board_construct(fpos, bsize)
-        else end
+        else gav.f.board_destruct(fpos, bsize) end
 end
 
-
+gav.u.paint = function(pos, painter)
+    local painter = gav.u.pln(painter)
+    local teamc = gav.players.teams[painter] or 1
+    return pos and minetest.get_node(pos).name == modn..":tile1" and minetest.set_node(pos, {name = modn..":tile"..teamc.."b"})
+end
 
 --------------------------
 
+-- HUD functions
 
+gav.u.hud_s = function(n, tf)
+    local name = gav.players.names[n]
+    if(tf and not gav.players.huds[name][1])then
+        gav.players.huds[name][1] =
+    gav.u.pl(name):hud_add({
+    hud_elem_type = "image",
+    position = {x=0.05, y=0.7},
+    name = "<name>",
+    scale = {x = 1.5, y = 1.5},
+    text = "icon_hud_setting0.png",
+    number = 1,
+    item = 1,
+    direction = 0,
+    alignment = {x=0, y=0},
+    offset = {x=-30, y=-10},
+    size = {x=2, y=2},
+})
+elseif(not tf and not gav.players.huds[name][2])then
+    
+    local strings = {}
+    for n = 1, #gav.SETTINGS do
+        strings[n] = gav.u.s(gav.SETTINGS[n])
+    end
 
+    local ftext = table.concat(strings)
+    minetest.wrap_text(ftext, 1, false)
+gav.players.huds[name][2] =
+    gav.u.pl(name):hud_add({
+    hud_elem_type = "text",
+    position = {x=0.1, y=0.7},
+    name = "",
+    scale = {x = 2, y = 2},
+    text = ftext,
+    number = "0xFFFFFF",
+    item = 1,
+    direction = 0,
+    alignment = {x=0, y=0},
+    offset = {x=0, y=0},
+    size = {x=2, y=2},
+})
 
+else end
+end
+
+gav.u.hud_c = function(n)
+    local name = gav.players.names[n]
+    if(gav.players.huds[name][2])then
+    
+        local strings = {}
+        for n = 1, #gav.SETTINGS - 2 do
+            strings[n] = gav.u.rolo_SETTINGS[n][gav.SETTINGS[n]] and tostring(gav.u.rolo_SETTINGS[n][gav.SETTINGS[n]]).."\n" or ""
+        end
+        local ftext = table.concat(strings)
+        minetest.wrap_text(ftext, 1, false)
+        gav.u.pl(name):hud_change(gav.players.huds[name][2], "text", ftext)
+    else end
+end
+
+--------------------------
 
 
 -- Schema

@@ -6,13 +6,15 @@ gav = {
     u = { colors = {"#f2f2f2","#ff6f5e","#228b22","#2c3d63","#ac67ef","#0e7fa7","#fdd66d","#8b8378","#addcca","#ff721a","#662f6d","#905f3b","#b62828"}},
     m = {},
     f = {},
-    players = {names = {}, teams = {}},
-    flow = { cycle = {}},
+    players = {names = {}, teams = {}, teams2 = {}, teams3 = {}, huds = {}}, -- names (all players), teams (names, but with team values to name keys), teams2 (teams but grouped and inverted), teams3 (teams but with a bool for readiness as value instead of team)
+    flow = {GAME_IO = false, cycle = {counter = 0, order = nil, nex = 1}},
     SETTINGS = {}
 }
+for n = 1, #gav.u.colors do
+gav.players.teams2[n] = {}
+end
 
-
-
+gav.SETTINGS[5] = 10
 
 dofile(path.."/node.lua")
 dofile(path.."/flow.lua")
@@ -36,11 +38,10 @@ vm:write_to_map()
 end)
 
 minetest.register_on_joinplayer(function(player) -- Add player name to list on login
-table.insert(gav.players.names, player:get_player_name())
-local props = player:get_properties()
-props.textures[1] = props.textures[1]-- To modify later
-player:set_properties(props)
-minetest.after(3, function() gav.u.sh(player:get_properties()) end)
+local name = gav.u.pln(player)
+table.insert(gav.players.names, name)
+gav.players.huds[name] = {}
+gav.u.hud_s(#gav.players.names, true)
 end)
 
 minetest.register_on_leaveplayer(function(player, timed_out) -- Remove playername from list on logout
@@ -52,14 +53,20 @@ minetest.register_on_leaveplayer(function(player, timed_out) -- Remove playernam
 end
 end)
 
-
-minetest.register_chatcommand("boardt", {
+-- Commands
+minetest.register_chatcommand("cyclet", {
     params = "<name> <privilege>", 
     description = "Remove privilege from player", 
     privs = {privs=true},
     func = function(name, param)
-        local player = gav.u.pl(name)
-        local pos = player:get_pos()
-        gav.f.board_construct(pos, 64)
+        gav.u.sh(gav.flow.GAME_IO)
+    end
+})
+minetest.register_chatcommand("startt", {
+    params = "<name> <privilege>", 
+    description = "Remove privilege from player", 
+    privs = {privs=true},
+    func = function(name, param)
+        gav.u.commence("random")
     end
 })

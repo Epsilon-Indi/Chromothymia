@@ -12,10 +12,29 @@ for n = 1, #gav.u.colors do
 minetest.register_node(modn..":tile"..n,{
     description = "Tile",
     paramtype = "light",
-    tiles = {"tile.png^[multiply:"..gav.u.colors[n]},
-    groups = {crumbly = 1},
+    tiles = {"tile_2b.png^[multiply:"..gav.u.colors[n]},
+    groups = {crumbly = 1,gav_color = 1},
     on_punch = function(pos)
     minetest.set_node(pos, {name = "air"})
+    end
+})
+minetest.register_node(modn..":tile"..n.."b",{
+    description = "Tile",
+    paramtype = "light",
+    tiles = {"tile_2b.png^[multiply:"..gav.u.colors[n]},
+    groups = {crumbly = 1, gav_color = 2, gav_color_tick = 2},
+    on_construct = function(pos)
+        local meta = minetest.get_meta(pos)
+        meta:set_int("lock_count", 8)
+    minetest.get_node_timer(pos):start(1)
+    end,
+    on_timer = function(pos)
+        gav.u.pret_au_chaud(pos, gav.u.colors[n])
+        minetest.get_node_timer(pos):start(1)
+    end,
+    on_punch = function(pos)
+        local name = modn.."tile"..n
+    minetest.set_node(pos, {name = name})
     end
 })
 end
@@ -37,9 +56,12 @@ minetest.register_node(modn..":inkwell",{
     mesh = "inkwell.obj",
     tiles = {"bricks1.png"},
     groups = {crumbly = 1},
-    on_punch = function(pos)
+    on_punch = function(pos, node, puncher)
     --minetest.set_node(pos, {name = "air"})
-    gav.u.teambubble(pos, gav.u.colors[math.random(1, #gav.u.colors)])
+    gav.u.team_rolo(puncher:get_player_name())
+    gav.u.teambubble(pos, gav.u.colors[gav.players.teams[puncher:get_player_name()]])
+    
+    gav.u.sh(gav.players.teams)
     end
 })
 minetest.register_node(modn..":brush",{
@@ -61,9 +83,9 @@ minetest.register_node(modn..":easel_blank",{
     drawtype = "mesh",
     mesh = "easel.obj",
     tiles = {"bricks1.png"},
-    groups = {crumbly = 1},
+    groups = {crumbly = 1, easel = 1},
     on_punch = function(pos)
-    minetest.set_node(pos, {name = modn..":easel_full"})
+    minetest.set_node(pos, {name = modn..":easel_full", param2 = 2})
     end
 })
 minetest.register_node(modn..":easel_full",{
@@ -73,7 +95,7 @@ minetest.register_node(modn..":easel_full",{
     drawtype = "mesh",
     mesh = "easel_full.obj",
     tiles = {"easeltest.png"},
-    groups = {crumbly = 1},
+    groups = {crumbly = 1, easel = 1},
     on_punch = function(pos)
         gav.u.easel_rolo(pos)
         gav.u.sh(minetest.get_meta(pos):get_int("easel_rolo"))
@@ -88,7 +110,9 @@ minetest.register_node(modn..":easel_full",{
     end
 })
 
-minetest.register_craftitem(modn..":filbert", {
+-- craftitems
+
+minetest.register_craftitem(modn..":filbert", { -- ADMIN BRUSH
     description = "Brush of the Cloister",
     groups = {},
     inventory_image = "default_tool_steelaxe.png",
@@ -105,6 +129,52 @@ minetest.register_craftitem(modn..":filbert", {
     on_drop = function(itemstack, dropper, pos)
     end,
     on_use = function(itemstack, user, pointed_thing)
-        gav.u.brushbuild(pointed_thing)
+        if(user:get_player_control().sneak)then
+        gav.u.brushbuild(pointed_thing, true)
+        else gav.u.brushbuild(pointed_thing, false) end
+    end
+})
+local bbb = true
+minetest.register_craftitem(modn..":brush", {
+    description = "Brush",
+    groups = {},
+    inventory_image = "brush.png",
+    inventory_overlay = "brush.png",
+    wield_image = "brush.png",
+    wield_overlay = "",
+    wield_scale = {x = 1, y = 1, z = 1},
+    stack_max = 99,
+    range = 4.0,
+    on_place = function(itemstack, placer, pointed_thing)
+    end,
+    on_secondary_use = function(itemstack, user, pointed_thing)
+        return
+    end,
+    on_drop = function(itemstack, dropper, pos)
+    end,
+    on_use = function(itemstack, user, pointed_thing)
+        gav.u.paint(pointed_thing.under, user)
+    end
+})
+minetest.register_craftitem(modn..":endt", {
+    description = "End Turn",
+    groups = {},
+    inventory_image = "icon_arrow_endturn.png",
+    wield_image = nil,
+    wield_overlay = nil,
+    wield_scale = {x = 1, y = 1, z = 1},
+    stack_max = 1,
+    range = 0,
+    on_place = function(itemstack, placer, pointed_thing)
+    end,
+    on_secondary_use = function(itemstack, user, pointed_thing)
+        return
+    end,
+    on_drop = function(itemstack, dropper, pos)
+    end,
+    on_use = function(itemstack, user, pointed_thing)
+        
+        gav.u.cycle_progress(gav.players.teams[user:get_player_name()], true)
+        gav.u.sh(gav.flow.cycle.counter)
     end
 })
