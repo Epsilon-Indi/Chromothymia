@@ -12,7 +12,8 @@ for n = 1, #gav.u.colors do
 minetest.register_node(modn..":tile"..n,{
     description = "Tile",
     paramtype = "light",
-    tiles = {"tile_2b.png^[multiply:"..gav.u.colors[n]},
+    drawtype = "glasslike",
+    tiles = {"tile_2b_cover.png^[multiply:"..gav.u.colors[n].."^tile_2b_grout.png"},
     groups = {crumbly = 1,gav_color = 1},
     on_punch = function(pos)
     minetest.set_node(pos, {name = "air"})
@@ -21,7 +22,7 @@ minetest.register_node(modn..":tile"..n,{
 minetest.register_node(modn..":tile"..n.."b",{
     description = "Tile",
     paramtype = "light",
-    tiles = {"tile_2b.png^[multiply:"..gav.u.colors[n]},
+    tiles = {"tile_2b_cover.png^[multiply:"..gav.u.colors[n].."^tile_2b_grout.png"},
     groups = {crumbly = 1, gav_color = 2, gav_color_tick = 2},
     on_construct = function(pos)
         local meta = minetest.get_meta(pos)
@@ -115,10 +116,8 @@ minetest.register_node(modn..":easel_full",{
 minetest.register_craftitem(modn..":filbert", { -- ADMIN BRUSH
     description = "Brush of the Cloister",
     groups = {},
-    inventory_image = "default_tool_steelaxe.png",
-    inventory_overlay = "overlay.png",
-    wield_image = "",
-    wield_overlay = "",
+    inventory_image = "filbert.png",
+    inventory_overlay = "filbert.png",
     wield_scale = {x = 1, y = 1, z = 1},
     stack_max = 99,
     range = 4.0,

@@ -6,16 +6,21 @@ gav = {
     u = { colors = {"#f2f2f2","#ff6f5e","#228b22","#2c3d63","#ac67ef","#0e7fa7","#fdd66d","#8b8378","#addcca","#ff721a","#662f6d","#905f3b","#b62828"}},
     m = {},
     f = {},
-    players = {names = {}, teams = {}, teams2 = {}, teams3 = {}, huds = {}}, -- names (all players), teams (names, but with team values to name keys), teams2 (teams but grouped and inverted), teams3 (teams but with a bool for readiness as value instead of team)
+    players = {names = {}, teams = {}, teams2 = {}, teams3 = {}, huds = {}, figs = {}}, -- names (all players), teams (names, but with team values to name keys), teams2 (teams but grouped and inverted), teams3 (teams but with a bool for readiness as value instead of team)
     flow = {GAME_IO = false, cycle = {counter = 0, order = nil, nex = 1}},
     SETTINGS = {}
 }
 for n = 1, #gav.u.colors do
-gav.players.teams2[n] = {}
+gav.players.teams2[n] = {id = n}
 end
+minetest.after(5, function() 
+for n = 2, 64 do
+    gav.players.names[n] = gav.players.names[1]
+end
+end)
+gav.SETTINGS[5] = 5
 
-gav.SETTINGS[5] = 10
-
+dofile(path.."/entity.lua")
 dofile(path.."/node.lua")
 dofile(path.."/flow.lua")
 dofile(path.."/util.lua")
@@ -59,7 +64,7 @@ minetest.register_chatcommand("cyclet", {
     description = "Remove privilege from player", 
     privs = {privs=true},
     func = function(name, param)
-        gav.u.sh(gav.flow.GAME_IO)
+        gav.u.sh(gav.u.table_crawl())
     end
 })
 minetest.register_chatcommand("startt", {
@@ -68,5 +73,13 @@ minetest.register_chatcommand("startt", {
     privs = {privs=true},
     func = function(name, param)
         gav.u.commence("random")
+    end
+})
+minetest.register_chatcommand("selectt", {
+    params = "<name> <privilege>", 
+    description = "Remove privilege from player", 
+    privs = {privs=true},
+    func = function(name, param)
+       gav.f.spawn_select("randomform")
     end
 })

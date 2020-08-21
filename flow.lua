@@ -17,10 +17,9 @@ minetest.register_abm(
     chance = 1,
     catch_up = false,
     action = function(pos, node, active_object_count, active_object_count_wider)
-         
+         --gav.u.sh(gav.players.teams2)
         if(gav.flow.GAME_IO)then 
         gav.u.cycle_progress()
-        gav.u.sh("Game is in progress")
         else
         for n = 1, #gav.players.names do
             local name = gav.players.names[n]
@@ -29,7 +28,6 @@ minetest.register_abm(
                 else gav.u.hud_s(n, false)
                 end       
         end  
-    --gav.u.sh("game stopped")     
     end
         return
     end

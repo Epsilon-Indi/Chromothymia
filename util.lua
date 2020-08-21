@@ -1,8 +1,11 @@
 
 -- Game agnostic functions
+gav.u.ch = function(v)
+    minetest.chat_send_all(v)
+    return true end
 
 gav.u.sh = function(v)
-return type(v) == "string" and minetest.chat_send_all(v) or minetest.chat_send_all(minetest.serialize(v))
+return type(v) == "string" and gav.u.ch(v) or minetest.chat_send_all(minetest.serialize(v))
 end
 
 gav.u.s = function(v)
@@ -51,33 +54,29 @@ gav.u.commence = function(order)
 end
 
 gav.f.board_wane = function()
+    if(gav.m.corners)then
     local field = minetest.find_nodes_in_area(gav.m.corners[1],gav.m.corners[2],"group:gav_color_tick")
     for n = 1, #field do
         gav.f.lock_wane(field[n])
     end
+else end
 end
 
-
-
-gav.u.cycle_shift = function()
-        if(gav.flow.cycle.prev)then
-        gav.u.mob_set_team(gav.flow.cycle.prev, false)
-        else
-        gav.flow.cycle.prev = gav.flow.cycle.nex
-        end 
-        gav.u.mob_set_team(gav.flow.cycle.nex, true)
-
-        gav.u.sh("turn shifted")
-
-        gav.flow.cycle.nex = gav.flow.cycle.nex + 1 <= #gav.players.teams2 and gav.players.teams2[gav.flow.cycle.nex + 1] and gav.flow.cycle.nex + 1 or 1
-        gav.u.sh(gav.players.teams2)
+gav.u.cycle_shift = function() -- Changes "turn". Invoking all functions at turn change.
+    local prev,nex = gav.flow.cycle.prev, gav.flow.cycle.nex
+        if(prev)then gav.u.mob_set_team(prev, false) else  end 
+        gav.flow.cycle.prev = nex
+        gav.u.mob_set_team(nex, true)
+        gav.u.sh("turn shifted. Current active team is "..nex)
+        gav.u.sh("Team at this position is "..gav.players.teams2[nex].id) -- *REMINDER replace with message function.
+        
+        gav.flow.cycle.nex = nex + 1 <= #gav.players.teams2 and nex + 1 or 1
     return true
 end
 
 gav.u.cycle_progress = function(color)
-    local color = color and #gav.players.teams2[color] or gav.SETTINGS[5]
+    local color = color and #gav.players.teams2[color] or 5
     gav.flow.cycle.counter = gav.flow.cycle.counter + 1
-    gav.u.sh("added 1".." now current counter value is "..gav.flow.cycle.counter)
     local function counterclear()
         gav.flow.cycle.counter = 0
         return true
@@ -105,12 +104,15 @@ end
 
 gav.u.team_clear = function(name) -- Clear team of player
     local team = gav.players.teams[name]
+    local ind = false
     gav.players.teams[name] = nil
     for n = 1, #gav.players.teams2[team] do
         if(gav.players.teams2[team][n] == name)then
-            table.remove( gav.players.teams2[team],n)
+            table.remove(gav.players.teams2[team],n)
+            ind = true
         else end
     end
+    return ind
 end
 gav.u.team_rolo = function(name)
     
@@ -118,6 +120,9 @@ gav.u.team_rolo = function(name)
         local function rolo_insert(name)
         local ind = gav.players.teams[name]
         ind = ind and ind <= #gav.u.colors and ind + 1 or 2
+        if(ind > 2)then
+            gav.u.team_clear(name)
+        else end
         gav.players.teams[name] = ind
         return gav.players.teams2[ind] and gav.u.team_set(name,ind)
         end
@@ -133,7 +138,16 @@ gav.u.team_shore = function(order) -- Meant for consolidation of teams
             end
         end
     end
-
+    cull()
+    local eph = {}
+    local num2 = 0
+    for k,v in pairs(gav.players.teams2)do
+        num2 = num2 + 1
+    eph[num2] = v; eph[#eph].id = k
+    end
+    gav.u.sh(eph)
+    gav.players.teams2 = eph; eph = nil
+    
     local function shuffle(order)
         if(order)then
             if(order == "random")then
@@ -157,20 +171,33 @@ gav.u.team_shore = function(order) -- Meant for consolidation of teams
     shuffle("random")
 end
 
-gav.u.mod_set = function()
+
+gav.u.assign_piece = function(name, num)
+    gav.u.players.figs[name] = gav.u.players.figs[name] or num
 end
 
+
+
 gav.u.mob_set_team = function(color, tf) -- Alter mobility state of an entire team, by color.
-    local phys = tf and {speed = 1, jump = 1, gravity = 1, sneak = true, sneak_glitch = false} or {speed = 0, jump = 0, gravity = 1, sneak = false, sneak_glitch = false}
     if(gav.players.teams2[color])then
+        local function invert_mesh(player)
+            local props = player:get_properties()
+            props.visual_size = {x = 0, y = 0}
+            player:set_properties(props)
+        end
+
+
+        local function attach_piece(player)
+        local ent = minetest.add_entity(player:get_pos(),modn..":pawn", nil)
+            --ent:set_attach(player, "Head", {x=0,y=0,z=0},{x=0,y=0,z=0})
+        end
     for n = 1, #gav.players.teams2[color] do
-        local player = gav.u.pl(gav.players.teams2[color][n])
-        --player:set_velocity({x = 0, y = 0, z = 0})
-        --player:set_acceleration({x = 0, y = 0, z = 0})
-        --minetest.set_node(player:get_pos(),{name = modn..":atile"})
-        --player:set_physics_override(phys)
         
-        gav.u.sh(player:get_player_velocity())
+        
+        local player = gav.u.pl(gav.players.teams2[color][n])
+        invert_mesh(player)
+        attach_piece(player)
+        gav.u.sh(player:get_player_name())
     end
 else end
 end

@@ -31,3 +31,71 @@ gav.f.lock_wane = function(pos)
     minetest.set_node(pos, {name = name})
     end
 end
+
+gav.f.spawn_select = function(form)
+    local tab = gav.m.corners
+
+    local area = minetest.find_nodes_in_area(tab[1],tab[2], "group:gav_color")
+    local num = math.sqrt(#area)
+    local points = {}
+    local data = {playerc = #gav.players.names}
+
+    if(form == "uniform")then
+        data.corners, data.offsets = {1,num,(num*(num-1)+1),num^2},{{1,num},{-1,num},{1,-num},{-1,-num}}
+        local function ladder_subtract(n)
+            local n,c = n,1
+            while(n-4>0)do
+                n = n - 4
+                c = c + 1
+            end
+            return {n,c}
+        end
+
+
+        local function populate_table()
+            for n = 1, data.playerc do
+                if(n <= 4)then
+                    points[n] = data.corners[n]
+                elseif(n > 4)then
+                    local nn = ladder_subtract(n)
+                    gav.u.sh(n)
+                    nn[2] = nn[2]-1
+                    gav.u.sh(nn)
+                    points[n] = data.corners[nn[1]] + data.offsets[nn[1]][1]*nn[2] + data.offsets[nn[1]][2]*nn[2]
+                else end
+            end
+        end
+
+        populate_table()
+        
+    elseif(form == "randomform")then
+        local pulled = {}
+        for n = 1, #area do
+            pulled[n] = n
+        end
+        local count = #pulled
+        for n = 1, #pulled - 1 do
+            local num = math.random(1,count)
+            local v, v2 = pulled[num],pulled[n]
+            pulled[n] = v
+            pulled[num] = v2
+        end
+        for n = 1,data.playerc do
+            points[n] = pulled[n]
+        end
+    else
+    end
+  
+    local function spawn_players()
+        for n = 1, #gav.players.names do
+            local sp = points[n]
+            local pos = area[sp]
+            gav.u.sh(sp)
+            pos.y = pos.y+0.5
+            minetest.add_entity(pos, modn..":pawn", nil)
+        end
+    end
+    spawn_players()
+    
+end
+
